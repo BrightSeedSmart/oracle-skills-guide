@@ -891,8 +891,8 @@ function tokenizeSpawn(line: string): string[] {
   let quote = false;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
-    if (c === "\\" && quote && line[i + 1]) {
-      cur += line[i + 1];
+    if (c === "\\" && quote && line[i + 1] === '"') {
+      cur += '"';
       i++;
       continue;
     }

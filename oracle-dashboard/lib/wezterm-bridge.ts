@@ -98,7 +98,8 @@ export async function wezTermSendText(paneId: number, text: string, noPaste: boo
 }
 
 /** Launch a new WezTerm window even when the GUI is not yet running. Uses
- *  `wezterm start` (not `cli spawn`), so no GUI socket required. */
+ *  `wezterm start` (not `cli spawn`), so no GUI socket required.
+ *  Detached so the window stays open regardless of this process's lifetime. */
 export async function wezTermStart(
   argv: string[],
   opts: { cwd?: string } = {},
@@ -108,7 +109,11 @@ export async function wezTermStart(
   const args = ["start"];
   if (opts.cwd?.trim()) args.push("--cwd", opts.cwd.trim());
   args.push("--", ...argv);
-  await execFileAsync(bin, args, { windowsHide: false, timeout: 5000 });
+  await new Promise<void>((resolve, reject) => {
+    const proc = spawn(bin, args, { windowsHide: false, detached: true, stdio: "ignore" });
+    proc.once("error", reject);
+    proc.once("spawn", () => { proc.unref(); resolve(); });
+  });
 }
 
 export async function wezTermSpawn(
