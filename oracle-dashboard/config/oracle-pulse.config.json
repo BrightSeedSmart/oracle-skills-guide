@@ -1,0 +1,129 @@
+{
+  "pulseSchema": 1,
+  "pulseCompat": 1,
+  "installId": "local-pulse",
+  "defaultPing": "/btw status",
+  "preferredTerminal": "tmux",
+  "agentTargets": {
+    "oracle":     { "tmuxPaneId": 0 },
+    "athena":     { "tmuxPaneId": 4 },
+    "relay":      { "tmuxPaneId": 5 },
+    "hermes":     { "tmuxPaneId": 9 },
+    "conductor":  { "tmuxPaneId": 10 }
+  },
+  "autoOps": {
+    "enabled": true,
+    "idleMs": 1200000
+  },
+  "agentActions": {
+    "_global": [
+      {
+        "id": "white-tmux-24-apollo",
+        "title": "white.local → tmux a -t 24-apollo",
+        "detail": "1-click: ssh -t แล้ว attach เข้าห้องงาน (ใช้ร่วมทุก agent)",
+        "kind": "wezterm-spawn",
+        "newWindow": true,
+        "variants": {
+          "localWin": "pwsh -NoLogo -NoExit -Command \"ssh -t nat@white.local 'tmux a -t 24-apollo'\"",
+          "localUnix": "ssh -t nat@white.local 'tmux a -t 24-apollo'",
+          "wsl": "ssh -t nat@white.local 'tmux a -t 24-apollo'",
+          "vps": "ssh -t nat@white.local 'tmux a -t 24-apollo'"
+        }
+      }
+    ],
+    "mother": [
+      {
+        "id": "tiktok-plan",
+        "title": "TikTok ปักตะกร้า: แผนหาเงิน (Auto)",
+        "detail": "เปิด playbook / สั่งแม่ทำแผน",
+        "kind": "pane",
+        "text": "/btw ออกแบบระบบหารายได้ TikTok ปักตะกร้า แบบ auto ให้เป็นขั้นตอน + checklist + KPI"
+      },
+      {
+        "id": "mother-ssh",
+        "title": "เปิด SSH → VPS",
+        "detail": "เปิด WezTerm หน้าต่างใหม่ + SSH เข้า VPS ทันที (ทำงานแม้ WezTerm ยังไม่ได้เปิด)",
+        "kind": "wezterm-start",
+        "text": "ssh root@72.60.77.195"
+      },
+      {
+        "id": "mother-workdir",
+        "title": "ไปโฟลเดอร์งาน (local)",
+        "detail": "spawn หน้าต่างใหม่ แล้ว cd โปรเจกต์",
+        "kind": "wezterm-spawn",
+        "newWindow": true,
+        "variants": {
+          "localWin": "pwsh -NoLogo -NoExit -Command \"cd F:\\Ai\\my-Oracle; ls\"",
+          "localUnix": "bash -lc \"cd ~/my-Oracle && ls\"",
+          "wsl": "cd ~/my-Oracle && ls",
+          "vps": "cd ~/my-Oracle && ls"
+        }
+      },
+      {
+        "id": "ssh-vps",
+        "title": "SSH ไป VPS",
+        "detail": "คัดลอกคำสั่ง (แก้ user@host)",
+        "kind": "copy",
+        "text": "ssh user@your-vps-host"
+      },
+      {
+        "id": "open-studio",
+        "title": "เปิด Oracle Studio (local)",
+        "detail": "คัดลอกคำสั่งไป terminal",
+        "kind": "copy",
+        "text": "cd oracle-studio && bun dev"
+      }
+    ],
+    "fireman": [
+      {
+        "id": "fireman-open-pulse-repo",
+        "title": "เปิดโฟลเดอร์งาน (local)",
+        "detail": "spawn หน้าต่างใหม่ → cd my-Oracle",
+        "kind": "wezterm-spawn",
+        "newWindow": true,
+        "variants": {
+          "localWin": "pwsh -NoLogo -NoExit -Command \"cd F:\\Ai\\my-Oracle; ls\"",
+          "localUnix": "bash -lc \"cd ~/my-Oracle && ls\"",
+          "wsl": "cd ~/my-Oracle && ls",
+          "vps": "cd ~/my-Oracle && ls"
+        }
+      },
+      {
+        "id": "fireman-open-dashboard-dev",
+        "title": "รัน oracle-dashboard (dev)",
+        "detail": "spawn หน้าต่างใหม่ → npm run dev",
+        "kind": "wezterm-spawn",
+        "newWindow": true,
+        "variants": {
+          "localWin": "pwsh -NoLogo -NoExit -Command \"cd F:\\Ai\\my-Oracle\\oracle-dashboard; npm run dev\"",
+          "localUnix": "bash -lc \"cd ~/my-Oracle/oracle-dashboard && npm run dev\"",
+          "wsl": "cd ~/my-Oracle/oracle-dashboard && npm run dev",
+          "vps": "cd ~/my-Oracle/oracle-dashboard && npm run dev"
+        }
+      },
+      {
+        "id": "fireman-ssh-vps",
+        "title": "SSH → VPS Ariadne",
+        "detail": "เปิด WezTerm ใหม่ + SSH เข้า VPS ทันที",
+        "kind": "wezterm-start",
+        "text": "ssh root@72.60.77.195"
+      },
+      {
+        "id": "fireman-pane-status",
+        "title": "ส่ง /btw status → pane",
+        "detail": "ต้อง Bind fireman → pane ก่อน (หรือตั้ง agentTargets.fireman.tmuxPaneId)",
+        "kind": "pane",
+        "text": "/btw status"
+      }
+    ]
+  },
+  "pricing": {
+    "usdPer1MInput": 3,
+    "usdPer1MOutput": 15,
+    "usdToThb": 32.61
+  },
+  "remoteState": {
+    "enabled": false,
+    "sshTarget": "root@72.60.77.195"
+  }
+}

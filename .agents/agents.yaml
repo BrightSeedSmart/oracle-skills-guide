@@ -1,0 +1,38 @@
+agents:
+  backend:
+    branch: agent/backend
+    worktree_path: /tmp/team-backend
+    model: sonnet
+    scope:
+      - oracle-dashboard/app/api/**
+      - oracle-dashboard/lib/**
+    description: API routes, tmux/wezterm bridge, SSH exec, config loading
+    token_budget: 50000
+
+  frontend:
+    branch: agent/frontend
+    worktree_path: /tmp/team-frontend
+    model: sonnet
+    scope:
+      - oracle-dashboard/components/**
+      - oracle-dashboard/app/page.tsx
+      - oracle-dashboard/app/layout.tsx
+      - oracle-dashboard/app/globals.css
+    description: UI components, hotkeys, styling, agent cards
+    token_budget: 50000
+
+  research:
+    branch: agent/research
+    worktree_path: /tmp/team-research
+    model: haiku
+    scope:
+      - ψ/learn/**
+      - ψ/memory/**
+    description: Read-only research, docs, summarize findings to ψ/learn/
+    token_budget: 20000
+
+orchestrator:
+  token_alert_threshold: 80000
+  notify: slack
+  merge_strategy: sequential
+  lead: oracle

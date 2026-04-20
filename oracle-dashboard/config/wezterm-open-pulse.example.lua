@@ -1,0 +1,17 @@
+-- ตัวอย่างผูก WezTerm → Oracle Pulse (Mission Control) ลด friction
+-- คู่มือตั้งค่า: config/PULSE-SETUP.md
+-- ถ้าเห็น WARN เรื่อง JetBrainsMono Nerd Font ให้ติดตั้งฟอนต์ Nerd แล้วตั้ง config.font ใน wezterm.lua
+-- คัดลอกส่วนที่ต้องการเข้า ~/.wezterm.lua หรือ require จากไฟล์ config ของคุณ
+--
+-- local wezterm = require 'wezterm'
+-- return {
+--   keys = {
+--     {
+--       key = 'O',
+--       mods = 'CTRL|SHIFT',
+--       action = wezterm.action.SpawnCommandInNewTab {
+--         args = { 'cmd.exe', '/c', 'start', '', 'http://localhost:3000' },
+--       },
+--     },
+--   },
+-- }

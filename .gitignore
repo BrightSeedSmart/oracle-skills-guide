@@ -4,3 +4,8 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Claude local settings (may contain tokens)
+.claude/settings.local.json
+# Token log (server-side, local only)
+oracle-dashboard/.token-log.json

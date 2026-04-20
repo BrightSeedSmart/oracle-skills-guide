@@ -1,0 +1,28 @@
+{
+  "_อ่านก่อน": "คู่มือเต็มอยู่ที่ config/PULSE-SETUP.md — ไฟล์นี้เป็นตัวอย่างเต็มรูปแบบ",
+  "pulseSchema": 1,
+  "pulseCompat": 1,
+  "installId": "brightseed-dev",
+  "defaultPing": "/btw status",
+  "preferredTerminal": "auto",
+  "missionSlots": [
+    {
+      "id": "5",
+      "title": "graph",
+      "detail": "/graph-oracle → claude (override agent)",
+      "kind": "agent",
+      "agentName": "conductor"
+    }
+  ],
+  "agentTargets": {
+    "oracle": { "tmuxPaneId": 0, "wezTermPaneId": 2 },
+    "hermes": { "tmuxPaneId": 1 },
+    "mother": { "wezTermPaneId": 3 }
+  },
+  "remoteState": {
+    "enabled": false,
+    "sshTarget": "user@remote-host",
+    "catPath": "/home/user/.oracle/pulse-state.json",
+    "pollIntervalMs": 20000
+  }
+}

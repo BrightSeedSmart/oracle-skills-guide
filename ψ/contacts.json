@@ -1,0 +1,19 @@
+{
+  "contacts": {
+    "ariadne": {
+      "maw": null,
+      "inbox": null,
+      "relay": "ORACLE_NAME=my-oracle node ~/.oracle/relay.js send --to ariadne --msg",
+      "repo": "Soul-Brews-Studio/graph-oracle",
+      "machine": "VPS 72.60.77.195",
+      "notes": "VPS Oracle — oracle_protocol 1.0 via Slack C0ATAC3MMGX"
+    }
+  },
+  "transport": {
+    "driver": "relay",
+    "channel": "C0ATAC3MMGX",
+    "workspace": "agenticaios.slack.com",
+    "relay_script": "~/.oracle/relay.js"
+  },
+  "updated": "2026-04-19T11:46:00Z"
+}

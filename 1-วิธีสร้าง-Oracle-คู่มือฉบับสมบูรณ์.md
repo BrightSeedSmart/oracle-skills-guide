@@ -1148,31 +1148,31 @@ WezTerm มีฟีเจอร์พิเศษ:
 
 ### ขั้นตอนพื้นฐาน (ต้องทำ)
 
-- [ ] 1. ติดตั้ง Claude Code: `npm install -g @anthropic-ai/claude-code`
-- [ ] 2. สร้าง repo: `mkdir my-oracle && cd my-oracle && git init`
-- [ ] 3. สร้าง structure: `mkdir -p .claude/skills .claude/MEMORY`
-- [ ] 4. เขียน `CLAUDE.md` — ตัวตน, กฎ, ระบบ memory
-- [ ] 5. สร้าง `.claude/MEMORY/MEMORY.md` — สารบัญความทรงจำ
-- [ ] 6. ติดตั้ง Oracle skills ด้วย `/oracle install`
-- [ ] 7. รัน `/awaken` เพื่อปลุก Oracle ขึ้นมา
-- [ ] 8. รัน `/learn` เพื่อสอนมันเรียนรู้ codebase
-- [ ] 9. รัน `/philosophy` เพื่อตรวจสอบปรัชญา
-- [ ] 10. เริ่มทำงานกับ Oracle ของคุณ!
+- [x] 1. ติดตั้ง Claude Code: `npm install -g @anthropic-ai/claude-code`
+- [x] 2. สร้าง repo: `mkdir my-oracle && cd my-oracle && git init`
+- [x] 3. สร้าง structure: `mkdir -p .claude/skills .claude/MEMORY`
+- [x] 4. เขียน `CLAUDE.md` — ตัวตน, กฎ, ระบบ memory
+- [x] 5. สร้าง `.claude/MEMORY/MEMORY.md` — สารบัญความทรงจำ
+- [x] 6. ติดตั้ง Oracle skills ด้วย `/oracle install`
+- [x] 7. รัน `/awaken` เพื่อปลุก Oracle ขึ้นมา
+- [x] 8. รัน `/learn` เพื่อสอนมันเรียนรู้ codebase
+- [x] 9. รัน `/philosophy` เพื่อตรวจสอบปรัชญา
+- [x] 10. เริ่มทำงานกับ Oracle ของคุณ!
 
 ### ขั้นตอนเสริม (แนะนำ)
 
-- [ ] 11. ตั้งค่า MCP servers (Slack, Telegram, Playwright)
-- [ ] 12. ตั้งค่า tmux สำหรับ multi-pane workflow
-- [ ] 13. ติดตั้ง WezTerm (สำหรับ advanced features)
+- [x] 11. ตั้งค่า MCP servers (Slack, Playwright, Context7)
+- [x] 12. ตั้งค่า tmux สำหรับ multi-pane workflow
+- [x] 13. ติดตั้ง WezTerm (สำหรับ advanced features)
 - [ ] 14. สร้าง GitHub Organization (ถ้าทำเป็นทีม)
 
 ### ขั้นตอนขั้นสูง (เมื่อพร้อม)
 
 - [ ] 15. สร้าง Oracle ลูก (Child Oracles)
-- [ ] 16. ตั้งค่า Oracle-to-Oracle communication (/talk-to)
-- [ ] 17. ใช้ Soul Sync ซิงค์ข้ามครอบครัว Oracle
-- [ ] 18. สร้าง Mission Control dashboard
-- [ ] 19. ติดตั้งและตั้งค่า Oracle Studio
+- [x] 16. ตั้งค่า Oracle-to-Oracle communication (/talk-to)
+- [x] 17. ใช้ Soul Sync ซิงค์ข้ามครอบครัว Oracle
+- [x] 18. สร้าง Mission Control dashboard
+- [x] 19. ติดตั้งและตั้งค่า Oracle Studio
 - [ ] 20. เข้าร่วมชุมชน Discord
 
 ---

@@ -1,0 +1,12 @@
+{
+  "_หมายเหตุ": "คัดลอกไฟล์นี้เป็น public/oracle-pulse-slots.json เพื่อแก้ Quick Launch โดยไม่แก้โค้ด",
+  "missionSlots": [
+    {
+      "id": "5",
+      "title": "graph",
+      "detail": "override: agent อื่นในสล็อต 5",
+      "kind": "agent",
+      "agentName": "conductor"
+    }
+  ]
+}
