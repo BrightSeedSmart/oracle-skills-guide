@@ -15,23 +15,30 @@ type AgentCardProps = {
 };
 
 export function AgentCard({ agent, selected, badge, remoteLabel, onSelect, onDoubleClick }: AgentCardProps) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastClickRef = useRef(0);
 
   const handleClick = () => {
     if (!onDoubleClick) { onSelect(); return; }
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-      onDoubleClick();
+    const now = Date.now();
+    if (now - lastClickRef.current < 400) {
+      // click ที่ 2 ของ double-click — ยกเลิก เพื่อไม่ให้ panel toggle กลับ
+      lastClickRef.current = 0;
       return;
     }
-    timerRef.current = setTimeout(() => { timerRef.current = null; onSelect(); }, 220);
+    lastClickRef.current = now;
+    onSelect();
+  };
+
+  const handleDoubleClick = () => {
+    lastClickRef.current = 0;
+    onDoubleClick?.();
   };
 
   return (
     <button
       type="button"
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       title="คลิก: เปิด panel  |  ดับเบิ้ลคลิก: เปิด WezTerm"
       className={`group relative flex aspect-square flex-col items-center justify-center rounded-xl border bg-zinc-900/80 p-3 text-center transition hover:bg-zinc-800/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 ${
         selected
