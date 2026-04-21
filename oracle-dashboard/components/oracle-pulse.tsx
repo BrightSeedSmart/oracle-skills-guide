@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AGENTS, CATEGORY_LABELS, type AgentCategory, type OracleAgent } from "@/lib/agents";
 import { AgentCard } from "@/components/agent-card";
+import { CommandPalette } from "@/components/command-palette";
 import { WorkOpsTab } from "@/components/work-ops-tab";
 import { WezTermPanel } from "@/components/wezterm-panel";
 import { TokenMonitor } from "@/components/token-monitor";
@@ -733,6 +734,15 @@ export function OraclePulse() {
     return () => window.removeEventListener("keydown", onKey);
   }, [appendLog, getPanel, selectAgent, selected, sendToBoundPane]);
 
+  // quick send from command palette — opens panel + sets input + fires send
+  const quickSendMessage = useCallback((agentKey: string, taskId: string, text: string) => {
+    const key = agentKey.toLowerCase();
+    setPanel(key, { open: true });
+    setTask(key, taskId, { input: text });
+    // tiny delay so state settles before send
+    setTimeout(() => void sendMessage(key, taskId), 50);
+  }, [setPanel, setTask]);
+
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -1114,6 +1124,15 @@ export function OraclePulse() {
             })}
         </div>
       ) : null}
+
+      {/* Command Palette — Ctrl+K */}
+      <CommandPalette
+        onSelectAgent={selectAgent}
+        onSpawnWezTerm={spawnWezTermForAgent}
+        onAddTask={addTask}
+        onSendMessage={quickSendMessage}
+        activePanels={panels}
+      />
     </div>
   );
 }
