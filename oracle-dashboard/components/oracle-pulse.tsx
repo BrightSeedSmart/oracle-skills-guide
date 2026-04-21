@@ -108,12 +108,27 @@ export function OraclePulse() {
     [panels],
   );
 
+  const defaultPanelState = useCallback((): AgentPanelState => ({
+    open: true,
+    input: "",
+    reply: "",
+    logs: ["welcome", "Use /btw to ask a quick question"],
+    loading: false,
+    claudeJobAt: null,
+    lastClaudeUsage: null,
+    lastClaudeSendAt: null,
+    lastClaudeSendText: null,
+    lastPaneSendAt: null,
+    lastPaneSendText: null,
+    attachments: [],
+  }), []);
+
   const setPanel = useCallback(
     (agentName: string, patch: Partial<AgentPanelState>) => {
       const key = agentName.toLowerCase();
-      setPanels((prev) => ({ ...prev, [key]: { ...getPanel(key), ...patch } }));
+      setPanels((prev) => ({ ...prev, [key]: { ...(prev[key] ?? defaultPanelState()), ...patch } }));
     },
-    [getPanel],
+    [defaultPanelState],
   );
 
   const appendLog = useCallback((agentName: string, line: string) => {
