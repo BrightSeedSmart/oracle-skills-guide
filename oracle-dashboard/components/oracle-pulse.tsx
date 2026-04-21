@@ -452,7 +452,7 @@ export function OraclePulse() {
         body = { action: "spawn", argv: tokenizeShell(text), newWindow: true };
       } else {
         // No configured action — open default shell in new WezTerm window
-        const defaultShell = isWin ? ["pwsh", "-NoLogo"] : isMac ? ["zsh", "-l"] : ["bash", "-l"];
+        const defaultShell = isWin ? ["pwsh", "-NoLogo", "-NoExit"] : isMac ? ["zsh", "-l"] : ["bash", "-l"];
         body = { action: "start", argv: defaultShell };
         appendLog(agent.name, `  (ไม่มี wezterm-spawn config → ใช้ shell: ${defaultShell[0]})`);
       }
