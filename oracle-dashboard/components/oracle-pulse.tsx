@@ -191,7 +191,7 @@ export function OraclePulse() {
       if (j.tab && (TABS as readonly string[]).includes(j.tab as string)) setTab(j.tab as (typeof TABS)[number]);
       if (j.filter && (["all", "core", "ops", "writing"] as const).includes(j.filter as any)) setFilter(j.filter as any);
       if (typeof j.selectedName === "string" && j.selectedName.trim()) {
-        const a = AGENTS.find((x) => x.name.toLowerCase() === j.selectedName!.toLowerCase());
+        const a = AGENTS.find((x) => x.name.toLowerCase() === (j.selectedName as string).toLowerCase());
         if (a) setSelected(a);
       }
       const rawPanels = j.panels;
