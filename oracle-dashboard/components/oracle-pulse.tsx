@@ -466,8 +466,8 @@ export function OraclePulse() {
         }
         const fallback = isWin ? ["powershell.exe", "-NoLogo"] : isMac ? ["zsh", "-l"] : ["bash", "-l"];
         const defaultShell = shellCacheRef.current ?? fallback;
-        body = { action: "spawn", argv: defaultShell, newWindow: true };
-        appendLog(agent.name, `  spawn: ${defaultShell[0]}`);
+        body = { action: "start", argv: defaultShell };
+        appendLog(agent.name, `  start: ${defaultShell[0]}`);
       }
 
       appendLog(agent.name, `  cmd: ${String(body.action)} [${(body.argv as string[]).join(", ")}]`);
