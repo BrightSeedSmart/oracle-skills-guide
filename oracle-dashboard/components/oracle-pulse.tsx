@@ -452,9 +452,10 @@ export function OraclePulse() {
         body = { action: "spawn", argv: tokenizeShell(text), newWindow: true };
       } else {
         // No configured action — open default shell in new WezTerm window
-        const defaultShell = isWin ? ["pwsh", "-NoLogo", "-NoExit"] : isMac ? ["zsh", "-l"] : ["bash", "-l"];
-        body = { action: "start", argv: defaultShell };
-        appendLog(agent.name, `  (ไม่มี wezterm-spawn config → ใช้ shell: ${defaultShell[0]})`);
+        // "spawn --new-window" ใช้ WezTerm mux — PTY ถูก allocate อย่างถูกต้อง ไม่ต้องใช้ -NoExit
+        const defaultShell = isWin ? ["pwsh", "-NoLogo"] : isMac ? ["zsh", "-l"] : ["bash", "-l"];
+        body = { action: "spawn", argv: defaultShell, newWindow: true };
+        appendLog(agent.name, `  (ไม่มี wezterm-spawn config → spawn new window: ${defaultShell[0]})`);
       }
 
       appendLog(agent.name, `  cmd: ${String(body.action)} [${(body.argv as string[]).join(", ")}]`);
