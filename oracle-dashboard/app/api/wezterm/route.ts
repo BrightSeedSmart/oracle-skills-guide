@@ -149,6 +149,9 @@ export async function POST(req: Request) {
       }
       const cwd = typeof (body as Record<string, unknown>).cwd === "string" ? String((body as Record<string, unknown>).cwd) : undefined;
       await wezTermStart(argv, { cwd });
+      // Give WezTerm ~800ms to initialize its window before we request focus
+      await new Promise<void>((r) => setTimeout(r, 800));
+      try { await focusWezTermWindow(); } catch { /* best-effort */ }
       return Response.json({ ok: true });
     }
 

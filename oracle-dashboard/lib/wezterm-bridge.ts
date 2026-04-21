@@ -165,9 +165,17 @@ export async function wezTermStart(
   if (opts.cwd?.trim()) args.push("--cwd", opts.cwd.trim());
   args.push("--", ...argv);
   await new Promise<void>((resolve, reject) => {
-    const proc = spawn(bin, args, { windowsHide: false, detached: true, stdio: "ignore" });
-    proc.once("error", reject);
-    proc.once("spawn", () => { proc.unref(); resolve(); });
+    const proc = spawn(bin, args, { windowsHide: false, detached: true, stdio: ["ignore", "ignore", "pipe"] });
+    let stderr = "";
+    let spawned = false;
+    proc.stderr?.setEncoding("utf8");
+    proc.stderr?.on("data", (c: string) => { stderr += c; });
+    proc.once("error", (err) => reject(new Error(`${err.message}${stderr ? ` — ${stderr.trim()}` : ""}`)));
+    proc.once("spawn", () => { spawned = true; proc.unref(); resolve(); });
+    proc.once("close", (code) => {
+      if (!spawned && code != null && code !== 0)
+        reject(new Error(`wezterm start exited ${code}${stderr ? `: ${stderr.trim()}` : ""}`));
+    });
   });
 }
 

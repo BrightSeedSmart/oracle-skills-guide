@@ -129,3 +129,116 @@ export async function dbGetTasks(agentKey?: string): Promise<OracleTask[]> {
     return [];
   }
 }
+
+// ─── Cache ────────────────────────────────────────────────────────────────────
+
+function hashQuestion(q: string): string {
+  // simple deterministic hash for cache key
+  let h = 0;
+  const s = q.toLowerCase().replace(/\s+/g, " ").trim();
+  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
+  return Math.abs(h).toString(36);
+}
+
+export async function dbCheckCache(agentKey: string, question: string): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const sb = getSupabaseAdmin();
+    const hash = hashQuestion(question);
+    const now = new Date().toISOString();
+    const { data } = await sb.from("oracle_cache")
+      .select("id, answer")
+      .eq("agent_key", agentKey).eq("q_hash", hash)
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+      .single();
+    if (!data) return null;
+    // bump hit count async
+    void sb.from("oracle_cache")
+      .update({ hit_count: (data as any).hit_count + 1, last_hit_at: now })
+      .eq("id", (data as any).id);
+    return (data as any).answer as string;
+  } catch { return null; }
+}
+
+export async function dbStoreCache(
+  agentKey: string, question: string, answer: string,
+  opts: { model?: string; inputTokens?: number; ttlHours?: number } = {}
+): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const sb = getSupabaseAdmin();
+    const hash = hashQuestion(question);
+    const expires = opts.ttlHours
+      ? new Date(Date.now() + opts.ttlHours * 3_600_000).toISOString()
+      : null;
+    await sb.from("oracle_cache").upsert(
+      { agent_key: agentKey, q_hash: hash, question, answer, model: opts.model, input_tokens: opts.inputTokens ?? 0, expires_at: expires },
+      { onConflict: "agent_key,q_hash" }
+    );
+  } catch { /* non-critical */ }
+}
+
+export type CacheEntry = {
+  id: number; agent_key: string; question: string; answer: string;
+  hit_count: number; tokens_saved: number; input_tokens: number;
+  model?: string; created_at: string; last_hit_at?: string;
+};
+
+export async function dbGetCacheEntries(agentKey?: string, limit = 50): Promise<CacheEntry[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const sb = getSupabaseAdmin();
+    let q = sb.from("oracle_cache").select("*").order("hit_count", { ascending: false });
+    if (agentKey) q = q.eq("agent_key", agentKey);
+    const { data } = await q.limit(limit);
+    return (data ?? []) as CacheEntry[];
+  } catch { return []; }
+}
+
+export async function dbDeleteCache(id: number): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try { await getSupabaseAdmin().from("oracle_cache").delete().eq("id", id); } catch { /* ignore */ }
+}
+
+export async function dbClearAllCache(agentKey?: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const sb = getSupabaseAdmin();
+    let q = sb.from("oracle_cache").delete();
+    if (agentKey) q = (q as any).eq("agent_key", agentKey);
+    else q = (q as any).neq("id", 0);
+    await q;
+  } catch { /* ignore */ }
+}
+
+// ─── Stats aggregation ────────────────────────────────────────────────────────
+
+export type AgentTokenStat = {
+  agent_key: string;
+  total_input: number;
+  total_output: number;
+  calls: number;
+  cache_saved: number;
+};
+
+export async function dbGetTokenStatsByAgent(sinceDays = 1): Promise<AgentTokenStat[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const sb = getSupabaseAdmin();
+    const since = new Date(Date.now() - sinceDays * 86_400_000).toISOString();
+    const { data } = await sb.from("oracle_token_log")
+      .select("agent_key, input_tokens, output_tokens, cache_read_tokens")
+      .gte("created_at", since);
+    if (!data) return [];
+    const map: Record<string, AgentTokenStat> = {};
+    for (const row of data as any[]) {
+      const k = row.agent_key;
+      if (!map[k]) map[k] = { agent_key: k, total_input: 0, total_output: 0, calls: 0, cache_saved: 0 };
+      map[k].total_input  += row.input_tokens  ?? 0;
+      map[k].total_output += row.output_tokens ?? 0;
+      map[k].cache_saved  += row.cache_read_tokens ?? 0;
+      map[k].calls        += 1;
+    }
+    return Object.values(map).sort((a, b) => (b.total_input + b.total_output) - (a.total_input + a.total_output));
+  } catch { return []; }
+}

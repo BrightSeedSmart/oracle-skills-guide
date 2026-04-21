@@ -62,6 +62,25 @@ create index if not exists oracle_tasks_source
 -- alter table oracle_token_log enable row level security;
 -- alter table oracle_tasks     enable row level security;
 
--- ─── 5. Realtime (เปิดให้ VPS↔PC sync แบบ realtime) ────────────────────────
+-- ─── 5. Response cache (ลด token — ตอบจาก cache ถ้าเคยถามแล้ว) ─────────────
+create table if not exists oracle_cache (
+  id            bigint generated always as identity primary key,
+  agent_key     text        not null,
+  q_hash        text        not null,
+  question      text        not null,
+  answer        text        not null,
+  model         text,
+  input_tokens  int         default 0,
+  hit_count     int         default 0,
+  tokens_saved  int         default 0,
+  expires_at    timestamptz,
+  created_at    timestamptz not null default now(),
+  last_hit_at   timestamptz,
+  unique (agent_key, q_hash)
+);
+create index if not exists oracle_cache_agent on oracle_cache (agent_key, hit_count desc);
+
+-- ─── 6. Realtime (เปิดให้ VPS↔PC sync แบบ realtime) ────────────────────────
 alter publication supabase_realtime add table oracle_tasks;
 alter publication supabase_realtime add table oracle_messages;
+alter publication supabase_realtime add table oracle_cache;

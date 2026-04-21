@@ -7,11 +7,12 @@ import { CommandPalette } from "@/components/command-palette";
 import { WorkOpsTab } from "@/components/work-ops-tab";
 import { WezTermPanel } from "@/components/wezterm-panel";
 import { TokenMonitor } from "@/components/token-monitor";
+import { BrainDashboard } from "@/components/brain-dashboard";
 import { pulseBridgeHeaders } from "@/lib/pulse-bridge-client";
 import { appendWorkOpsLog, endWorkSession, getWorkOpsSnapshot, startOrTouchWorkSession, touchWorkSession } from "@/lib/work-ops-store";
 import { idbDeleteAttachments, idbGetAttachments, idbPutAttachment } from "@/lib/idb-attachments";
 
-const TABS = ["Agents", "WezTerm", "Ops", "Tokens", "Voice", "API"] as const;
+const TABS = ["Agents", "WezTerm", "Ops", "Tokens", "Brain", "Voice", "API"] as const;
 const UI_STATE_KEY = "oracle-pulse-ui-state:v2";
 
 function tokenizeShell(line: string): string[] {
@@ -392,7 +393,7 @@ export function OraclePulse() {
         body: JSON.stringify(
           hasImages
             ? { agent: key, taskId, message: effectiveMessage, images: task.attachments.map((a) => ({ dataUrl: a.dataUrl, type: a.type })) }
-            : { agent: key, taskId, message: effectiveMessage },
+            : { agent: key, taskId, message: effectiveMessage, modelTier: localStorage.getItem("oracle-brain-model-tier") ?? "auto" },
         ),
       });
       const data: { reply?: string; error?: string; usage?: ClaudeUsage } = await res.json();
@@ -801,6 +802,15 @@ export function OraclePulse() {
           pricing={pricing} />
       ) : tab === "Tokens" ? (
         <TokenMonitor pricing={pricing} />
+      ) : tab === "Brain" ? (
+        <BrainDashboard
+          pricing={pricing}
+          onSelectAgent={(agentKey) => {
+            const a = AGENTS.find(x => x.name.toLowerCase() === agentKey.toLowerCase());
+            if (a) { setTab("Agents"); selectAgent(a); }
+          }}
+          onSendMessage={(agentKey, text) => quickSendMessage(agentKey, "main", text)}
+        />
       ) : tab === "Agents" ? (
         <div className="flex flex-1 min-h-0">
           <main className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
