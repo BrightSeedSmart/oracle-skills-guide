@@ -425,46 +425,81 @@ export function OraclePulse() {
   const spawnWezTermForAgent = useCallback(
     async (agent: OracleAgent) => {
       const key = agent.name.toLowerCase();
-      // Ensure panel is open to show logs
       setPanel(key, { open: true });
-      appendLog(agent.name, "WezTerm: กำลัง spawn…");
+      appendLog(agent.name, `WezTerm ▶ spawn agent:${agent.name} (${agent.displayId})`);
+
+      // OS detection — userAgent is reliable across browsers; navigator.platform is deprecated
+      const ua = typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : "";
+      const isWin = ua.includes("windows");
+      const isMac = ua.includes("macintosh");
+      // Linux = neither isWin nor isMac
 
       const actions: any[] = Array.isArray(agentActions[key]) ? agentActions[key] : [];
       const spawnAction = actions.find((a: any) => a?.kind === "wezterm-spawn");
 
       let body: Record<string, unknown>;
       if (spawnAction) {
-        const v = spawnAction.variants;
-        const isWin = typeof navigator !== "undefined" && /win/i.test(navigator.platform);
-        const text: string = v
+        const v = spawnAction.variants as Record<string, string> | undefined;
+        // Resolve platform-specific command: localWin → Windows, localUnix → macOS/Linux
+        const text = v
           ? String(isWin ? (v.localWin ?? spawnAction.text ?? "") : (v.localUnix ?? spawnAction.text ?? ""))
           : typeof spawnAction.text === "string" ? spawnAction.text : "";
         if (!text.trim()) {
-          appendLog(agent.name, "WezTerm: ไม่มีคำสั่ง — เพิ่ม variants.localWin ใน config");
+          appendLog(agent.name, `WezTerm: ไม่มีคำสั่งสำหรับ ${isWin ? "Windows" : isMac ? "macOS" : "Linux"}`);
+          appendLog(agent.name, `  → เพิ่ม agentActions["${key}"][].variants.${isWin ? "localWin" : "localUnix"} ใน oracle-pulse.config.json`);
           return;
         }
         body = { action: "spawn", argv: tokenizeShell(text), newWindow: true };
       } else {
-        const isWin = typeof navigator !== "undefined" && /win/i.test(navigator.platform);
-        body = { action: "start", argv: isWin ? ["pwsh", "-NoLogo"] : ["bash", "-l"] };
+        // No configured action — open default shell in new WezTerm window
+        const defaultShell = isWin ? ["pwsh", "-NoLogo"] : isMac ? ["zsh", "-l"] : ["bash", "-l"];
+        body = { action: "start", argv: defaultShell };
+        appendLog(agent.name, `  (ไม่มี wezterm-spawn config → ใช้ shell: ${defaultShell[0]})`);
       }
 
-      appendLog(agent.name, `WezTerm: ${String(body.action)} → ${(body.argv as string[]).join(" ")}`);
+      appendLog(agent.name, `  cmd: ${String(body.action)} [${(body.argv as string[]).join(", ")}]`);
       appendWorkOpsLog("system", `WezTerm spawn: ${agent.name}`, { agentName: agent.name });
+
       try {
         const res = await fetch("/api/wezterm", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...pulseBridgeHeaders() },
           body: JSON.stringify(body),
         });
-        const data = await res.json() as { ok?: boolean; error?: string; paneIdOut?: unknown };
+        const data = await res.json() as { ok?: boolean; error?: string; paneIdOut?: unknown; enabled?: boolean };
+
+        // Bridge disabled
+        if (res.status === 403 || data.enabled === false) {
+          appendLog(agent.name, "✗ WezTerm bridge ปิดอยู่ — ต้องตั้งค่าก่อน:");
+          appendLog(agent.name, "  1. เพิ่ม WEZTERM_BRIDGE_ENABLED=1 ใน .env.local");
+          appendLog(agent.name, "  2. restart: npm run dev");
+          appendLog(agent.name, "  3. ติดตั้ง WezTerm ถ้ายังไม่มี:");
+          if (isWin) appendLog(agent.name, "     winget install wez.wezterm");
+          else if (isMac) appendLog(agent.name, "     brew install --cask wezterm");
+          else appendLog(agent.name, "     https://wezfurlong.org/wezterm/install/linux.html");
+          return;
+        }
+
         if (data.ok) {
-          appendLog(agent.name, `WezTerm: เปิดแล้ว${data.paneIdOut != null ? ` (pane ${data.paneIdOut})` : ""}`);
+          appendLog(agent.name, `✓ WezTerm เปิดแล้ว${data.paneIdOut != null ? ` — pane ${data.paneIdOut}` : ""}`);
         } else {
-          appendLog(agent.name, `WezTerm error: ${data.error ?? "unknown"}`);
+          const errMsg = String(data.error ?? "unknown");
+          appendLog(agent.name, `✗ WezTerm error: ${errMsg}`);
+          // Binary not found
+          if (/not found|no such file|cannot find|is not recognized/i.test(errMsg)) {
+            appendLog(agent.name, "  WezTerm ยังไม่ได้ติดตั้ง หรือ PATH ยังไม่ถูกต้อง:");
+            if (isWin) {
+              appendLog(agent.name, "  → winget install wez.wezterm");
+              appendLog(agent.name, "  → หรือ WEZTERM_BIN=C:\\Program Files\\WezTerm\\wezterm.exe ใน .env.local");
+            } else if (isMac) {
+              appendLog(agent.name, "  → brew install --cask wezterm");
+            } else {
+              appendLog(agent.name, "  → https://wezfurlong.org/wezterm/install/linux.html");
+            }
+          }
         }
       } catch (e) {
-        appendLog(agent.name, `WezTerm error: ${e instanceof Error ? e.message : "failed"}`);
+        appendLog(agent.name, `✗ WezTerm fetch error: ${e instanceof Error ? e.message : "network failed"}`);
       }
     },
     [agentActions, appendLog, appendWorkOpsLog, setPanel],
