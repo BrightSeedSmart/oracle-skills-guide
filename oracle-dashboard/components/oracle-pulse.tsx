@@ -100,6 +100,10 @@ export function OraclePulse() {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [wezTermHistory, setWezTermHistory] = useState<Record<string, WezTermEntry[]>>({});
   const [historyOpenKey, setHistoryOpenKey] = useState<string | null>(null);
+  type WezPaneRow = { pane_id: number; tab_id: number; window_id: number; workspace: string; title: string; cwd: string };
+  const [wezTermPanes, setWezTermPanes] = useState<WezPaneRow[] | null>(null);
+  const [panesLoading, setPanesLoading] = useState(false);
+  const [panesExpandedKey, setPanesExpandedKey] = useState<string | null>(null);
   const opsBoot = useRef(false);
 
   const filtered = useMemo(
@@ -420,6 +424,38 @@ export function OraclePulse() {
       setTask(key, taskId, { loading: false, claudeJobAt: null, input: "", attachments: [] });
     }
   }
+
+  // ─── WezTerm pane list ──────────────────────────────────────────────────────
+
+  const fetchWezTermPanes = useCallback(async () => {
+    setPanesLoading(true);
+    try {
+      const res = await fetch("/api/wezterm", { headers: pulseBridgeHeaders() });
+      if (!res.ok) { setWezTermPanes([]); return; }
+      const data = await res.json() as { panes?: WezPaneRow[]; enabled?: boolean; error?: string };
+      setWezTermPanes(data.panes ?? []);
+    } catch {
+      setWezTermPanes([]);
+    } finally {
+      setPanesLoading(false);
+    }
+  }, []);
+
+  const activatePane = useCallback(async (paneId: number, agentName: string) => {
+    appendLog(agentName, `→ activate pane #${paneId}`);
+    try {
+      const res = await fetch("/api/wezterm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...pulseBridgeHeaders() },
+        body: JSON.stringify({ action: "activate-pane", paneId }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (data.ok) appendLog(agentName, `✓ pane #${paneId} active`);
+      else appendLog(agentName, `✗ ${data.error ?? "error"}`);
+    } catch (e) {
+      appendLog(agentName, `✗ ${e instanceof Error ? e.message : "error"}`);
+    }
+  }, [appendLog]);
 
   // ─── Spawn WezTerm ──────────────────────────────────────────────────────────
 
@@ -924,6 +960,52 @@ export function OraclePulse() {
                     <button type="button" onClick={() => addTask(key)}
                       className="ml-1 flex h-6 shrink-0 items-center justify-center rounded px-1.5 text-[11px] text-zinc-500 hover:bg-zinc-700 hover:text-zinc-200"
                       title="เพิ่ม task ใหม่">+</button>
+                  </div>
+
+                  {/* WezTerm pane list */}
+                  <div className="border-b border-zinc-800/50">
+                    <button type="button"
+                      onClick={() => {
+                        const next = panesExpandedKey === key ? null : key;
+                        setPanesExpandedKey(next);
+                        if (next) void fetchWezTermPanes();
+                      }}
+                      className="flex w-full items-center justify-between px-3 py-1.5 text-[11px] text-zinc-500 hover:bg-zinc-800/30">
+                      <span className="flex items-center gap-1.5">
+                        <span>🖥</span>
+                        <span>WezTerm Panes</span>
+                        {wezTermPanes != null && <span className="rounded-full bg-zinc-800 px-1.5 text-[10px] text-zinc-400">{wezTermPanes.length}</span>}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        {panesExpandedKey === key && (
+                          <span onClick={(e) => { e.stopPropagation(); void fetchWezTermPanes(); }}
+                            className="rounded px-1 text-[10px] hover:text-zinc-200" title="Refresh">↻</span>
+                        )}
+                        <span className="text-[10px]">{panesExpandedKey === key ? "▲" : "▼"}</span>
+                      </span>
+                    </button>
+                    {panesExpandedKey === key && (
+                      <div className="max-h-36 overflow-y-auto bg-zinc-950/40">
+                        {panesLoading ? (
+                          <div className="px-3 py-2 text-[11px] text-zinc-500">กำลังโหลด…</div>
+                        ) : !wezTermPanes?.length ? (
+                          <div className="px-3 py-2 text-[11px] text-zinc-500">ไม่พบ pane — เปิด WezTerm ก่อน</div>
+                        ) : (
+                          wezTermPanes.map((pane) => (
+                            <button key={pane.pane_id} type="button"
+                              onClick={() => void activatePane(pane.pane_id, agent.name)}
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition hover:bg-zinc-800/70">
+                              <span className="shrink-0 font-mono text-[10px] text-zinc-600">#{pane.pane_id}</span>
+                              <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-200">{pane.title || "—"}</span>
+                              <span className="shrink-0 max-w-[5rem] truncate text-[10px] text-zinc-500" title={pane.cwd}>
+                                {pane.cwd ? pane.cwd.replace(/^.*[/\\]([^/\\]+)$/, "$1") : ""}
+                              </span>
+                              <span className="shrink-0 rounded bg-zinc-800 px-1 text-[9px] text-zinc-500">▶</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Logs */}

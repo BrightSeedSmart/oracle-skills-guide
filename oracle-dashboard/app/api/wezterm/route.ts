@@ -196,6 +196,15 @@ export async function POST(req: Request) {
       return Response.json({ ok: true, paneIdOut });
     }
 
+    if (action === "activate-pane") {
+      const paneId = Number((body as { paneId?: unknown }).paneId);
+      if (!Number.isFinite(paneId) || paneId < 0) {
+        return Response.json({ error: "Invalid paneId." }, { status: 400 });
+      }
+      await wezTermActivatePane(paneId);
+      return Response.json({ ok: true });
+    }
+
     return Response.json({ error: "Unknown action." }, { status: 400 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "WezTerm CLI failed";
