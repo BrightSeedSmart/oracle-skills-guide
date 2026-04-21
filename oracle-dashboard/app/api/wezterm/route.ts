@@ -3,6 +3,7 @@ import { getPulseBridgeSecret, verifyPulseBridgeRequest } from "@/lib/pulse-brid
 import {
   isWezTermBridgeEnabled,
   resolveWezTermBin,
+  wezTermActivatePane,
   wezTermListPanes,
   wezTermSendText,
   wezTermSpawn,
@@ -184,6 +185,10 @@ export async function POST(req: Request) {
         workspace,
         windowId: typeof windowId === "number" && Number.isFinite(windowId) ? windowId : undefined,
       });
+      // Bring the new pane to foreground after spawn
+      if (paneIdOut) {
+        try { await wezTermActivatePane(Number(paneIdOut)); } catch { /* best-effort */ }
+      }
       return Response.json({ ok: true, paneIdOut });
     }
 

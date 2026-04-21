@@ -62,6 +62,27 @@ export async function wezTermListPanes(): Promise<WezTermPaneRow[]> {
   }
 }
 
+export async function wezTermActivatePane(paneId: number): Promise<void> {
+  const bin = resolveWezTermBin();
+  const makeArgs = (preferMux: boolean) =>
+    ["cli", ...(preferMux ? ["--prefer-mux"] : preferMuxFlag()), "activate-pane", "--pane-id", String(paneId)];
+  const run = (args: string[]) =>
+    new Promise<void>((resolve, reject) => {
+      const proc = spawn(bin, args, { windowsHide: true, stdio: "ignore" });
+      proc.on("error", reject);
+      proc.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`activate-pane exited ${code}`))));
+    });
+  try {
+    await run(makeArgs(false));
+  } catch (e) {
+    if (preferMuxFlag().length === 0 && shouldRetryPreferMux(e)) {
+      await run(makeArgs(true));
+      return;
+    }
+    throw e;
+  }
+}
+
 export async function wezTermSendText(paneId: number, text: string, noPaste: boolean): Promise<void> {
   const bin = resolveWezTermBin();
   const argsBase = ["cli", ...preferMuxFlag(), "send-text", "--pane-id", String(paneId)];

@@ -916,14 +916,24 @@ export function OraclePulse() {
                     >
                       {agent.name}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => closePanel(key)}
-                      className="rounded-md px-2 py-1 text-xs text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100"
-                      aria-label={`Close ${agent.name}`}
-                    >
-                      ×
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void spawnWezTermForAgent(agent)}
+                        className="rounded-md px-2 py-1 text-xs text-zinc-400 transition hover:bg-emerald-900/50 hover:text-emerald-300"
+                        title="เปิด WezTerm window ใหม่สำหรับ agent นี้"
+                      >
+                        ⌨
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => closePanel(key)}
+                        className="rounded-md px-2 py-1 text-xs text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100"
+                        aria-label={`Close ${agent.name}`}
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
 
                   <div className="max-h-48 overflow-y-auto px-3 py-2 font-mono text-[11px] leading-relaxed text-zinc-300">
