@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { recordTokens } from "@/lib/token-store";
+import { dbGetHistory, dbLogTokens, dbSaveMessage } from "@/lib/supabase";
 
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
@@ -26,6 +27,8 @@ export async function POST(req: Request) {
   const agent = typeof body === "object" && body && "agent" in body ? String((body as { agent: unknown }).agent) : "";
   const message =
     typeof body === "object" && body && "message" in body ? String((body as { message: unknown }).message) : "";
+  const taskId =
+    typeof body === "object" && body && "taskId" in body ? String((body as { taskId: unknown }).taskId) : "main";
 
   if (!agent.trim() || !message.trim()) {
     return Response.json({ error: "Fields `agent` and `message` are required." }, { status: 400 });
@@ -34,7 +37,15 @@ export async function POST(req: Request) {
   const model = process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
   const client = new Anthropic({ apiKey });
 
+  // ดึงประวัติการสนทนาจาก Supabase เพื่อลด token (ส่ง context เฉพาะที่จำเป็น)
+  const history = await dbGetHistory(agent, taskId, 16);
+
   try {
+    const messages: Anthropic.MessageParam[] = [
+      ...history,
+      { role: "user", content: message },
+    ];
+
     const response = await client.messages.create({
       model,
       max_tokens: 1024,
@@ -46,10 +57,10 @@ export async function POST(req: Request) {
         },
         {
           type: "text",
-          text: `Agent ที่ใช้งานอยู่: "${agent}"`,
+          text: `Agent ที่ใช้งานอยู่: "${agent}" | Task: "${taskId}"`,
         },
       ],
-      messages: [{ role: "user", content: message }],
+      messages,
     });
 
     const block = response.content[0];
@@ -64,6 +75,11 @@ export async function POST(req: Request) {
       typeof inputTokens === "number" && typeof outputTokens === "number" ? inputTokens + outputTokens : undefined;
 
     recordTokens(agent, { inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens });
+
+    // บันทึก conversation + token log ลง Supabase (async — ไม่รอ)
+    void dbSaveMessage({ agent_key: agent, task_id: taskId, role: "user", content: message });
+    void dbSaveMessage({ agent_key: agent, task_id: taskId, role: "assistant", content: reply, input_tokens: inputTokens, output_tokens: outputTokens });
+    void dbLogTokens({ agent_key: agent, model, input_tokens: inputTokens, output_tokens: outputTokens, cache_creation_tokens: cacheCreationTokens, cache_read_tokens: cacheReadTokens });
 
     return Response.json({
       reply,

@@ -390,8 +390,8 @@ export function OraclePulse() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           hasImages
-            ? { agent: key, message: effectiveMessage, images: task.attachments.map((a) => ({ dataUrl: a.dataUrl, type: a.type })) }
-            : { agent: key, message: effectiveMessage },
+            ? { agent: key, taskId, message: effectiveMessage, images: task.attachments.map((a) => ({ dataUrl: a.dataUrl, type: a.type })) }
+            : { agent: key, taskId, message: effectiveMessage },
         ),
       });
       const data: { reply?: string; error?: string; usage?: ClaudeUsage } = await res.json();
