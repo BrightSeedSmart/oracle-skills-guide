@@ -408,26 +408,33 @@ export function OraclePulse() {
 
   const selectAgent = useCallback(
     (agent: OracleAgent) => {
-      if (selected?.id === agent.id) {
-        setUnreadById((prev) => ({ ...prev, [agent.id]: 0 }));
-        return;
-      }
       const key = agent.name.toLowerCase();
       setSelected(agent);
       setUnreadById((prev) => ({ ...prev, [agent.id]: 0 }));
       setPanels((prev) => {
-        const next: Record<string, AgentPanelState> = {};
-        for (const [k, p] of Object.entries(prev)) {
-          next[k] = { ...p, open: false };
-        }
-        next[key] = { ...getPanel(key), open: true };
-        return next;
+        const cur = prev[key];
+        const wasOpen = cur?.open ?? false;
+        const fresh: AgentPanelState = cur ?? {
+          open: !wasOpen,
+          input: "",
+          reply: "",
+          logs: ["welcome", "Use /btw to ask a quick question"],
+          loading: false,
+          claudeJobAt: null,
+          lastClaudeUsage: null,
+          lastClaudeSendAt: null,
+          lastClaudeSendText: null,
+          lastPaneSendAt: null,
+          lastPaneSendText: null,
+          attachments: [],
+        };
+        return { ...prev, [key]: { ...fresh, open: !wasOpen } };
       });
       appendLog(agent.name, `focused: ${agent.name} (${agent.displayId})`);
       appendWorkOpsLog("focus", `โฟกัส agent ${agent.name}`, { agentName: agent.name });
       if (autoOpsEnabled) startOrTouchWorkSession(agent.name, "Auto: focus");
     },
-    [appendLog, appendWorkOpsLog, autoOpsEnabled, getPanel, selected],
+    [appendLog, appendWorkOpsLog, autoOpsEnabled],
   );
 
   const closePanel = useCallback(
