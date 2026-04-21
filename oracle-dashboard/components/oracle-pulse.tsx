@@ -32,6 +32,7 @@ function tokenizeShell(line: string): string[] {
 
 type ClaudeUsage = { inputTokens?: number; outputTokens?: number; totalTokens?: number };
 type PanelAttachment = { id: string; name: string; type: string; size: number; dataUrl: string };
+type WezTermEntry = { argv: string[]; action: string; ts: number; label: string };
 
 type AgentTask = {
   id: string;
@@ -97,6 +98,8 @@ export function OraclePulse() {
   const [remoteEnabled, setRemoteEnabled] = useState(false);
   const [paneSendPending, setPaneSendPending] = useState<Record<string, boolean>>({});
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [wezTermHistory, setWezTermHistory] = useState<Record<string, WezTermEntry[]>>({});
+  const [historyOpenKey, setHistoryOpenKey] = useState<string | null>(null);
   const opsBoot = useRef(false);
 
   const filtered = useMemo(
@@ -490,6 +493,11 @@ export function OraclePulse() {
         }
         if (data.ok) {
           appendLog(agent.name, `✓ WezTerm เปิดแล้ว${data.paneIdOut != null ? ` — pane ${data.paneIdOut}` : ""}`);
+          const entryLabel = (body.argv as string[]).slice(0, 2).join(" ");
+          setWezTermHistory((prev) => ({
+            ...prev,
+            [key]: [{ argv: body.argv as string[], action: String(body.action), ts: Date.now(), label: entryLabel }, ...(prev[key] ?? [])].slice(0, 30),
+          }));
         } else {
           const errMsg = String(data.error ?? "unknown");
           appendLog(agent.name, `✗ WezTerm error: ${errMsg}`);
@@ -505,6 +513,31 @@ export function OraclePulse() {
     },
     [agentActions, appendLog, appendWorkOpsLog, setPanel],
   );
+
+  const respawnWezTermEntry = useCallback(async (agentName: string, entry: WezTermEntry) => {
+    const key = agentName.toLowerCase();
+    appendLog(agentName, `WezTerm ↩ re-spawn: ${entry.label}  (${new Date(entry.ts).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })})`);
+    setHistoryOpenKey(null);
+    try {
+      const res = await fetch("/api/wezterm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...pulseBridgeHeaders() },
+        body: JSON.stringify({ action: entry.action, argv: entry.argv }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (data.ok) {
+        appendLog(agentName, `✓ re-spawn สำเร็จ`);
+        setWezTermHistory((prev) => ({
+          ...prev,
+          [key]: [{ ...entry, ts: Date.now() }, ...(prev[key] ?? []).filter((e) => e.ts !== entry.ts)].slice(0, 30),
+        }));
+      } else {
+        appendLog(agentName, `✗ re-spawn: ${data.error ?? "error"}`);
+      }
+    } catch (e) {
+      appendLog(agentName, `✗ re-spawn: ${e instanceof Error ? e.message : "network error"}`);
+    }
+  }, [appendLog]);
 
   // ─── Select agent ───────────────────────────────────────────────────────────
 
@@ -817,7 +850,38 @@ export function OraclePulse() {
                       className="text-sm font-medium capitalize text-zinc-100 hover:text-violet-200" title="Focus">
                       {agent.emoji} {agent.name}
                     </button>
-                    <div className="flex items-center gap-1">
+                    <div className="relative flex items-center gap-1">
+                      {/* WezTerm history dropdown */}
+                      {(wezTermHistory[key]?.length ?? 0) > 0 && (
+                        <div className="relative">
+                          <button type="button"
+                            onClick={() => setHistoryOpenKey(historyOpenKey === key ? null : key)}
+                            className={`rounded-md px-1.5 py-1 text-[11px] transition ${historyOpenKey === key ? "bg-zinc-700 text-zinc-200" : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"}`}
+                            title="ประวัติ WezTerm sessions">⏮</button>
+                          {historyOpenKey === key && (
+                            <div className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl">
+                              <div className="border-b border-zinc-800 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                                WezTerm History
+                              </div>
+                              <ul className="max-h-48 overflow-y-auto">
+                                {(wezTermHistory[key] ?? []).map((entry, i) => (
+                                  <li key={`${entry.ts}-${i}`}>
+                                    <button type="button"
+                                      onClick={() => void respawnWezTermEntry(agent.name, entry)}
+                                      className="flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-zinc-800">
+                                      <span className="truncate text-[11px] font-medium text-zinc-200">{entry.label}</span>
+                                      <span className="text-[10px] text-zinc-500">
+                                        {new Date(entry.ts).toLocaleDateString("th-TH", { month: "short", day: "numeric" })}{" "}
+                                        {new Date(entry.ts).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}
+                                      </span>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <button type="button" onClick={() => void spawnWezTermForAgent(agent)}
                         className="rounded-md px-2 py-1 text-xs text-zinc-400 transition hover:bg-emerald-900/50 hover:text-emerald-300"
                         title="เปิด WezTerm window ใหม่">⌨</button>
