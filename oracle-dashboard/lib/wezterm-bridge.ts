@@ -62,6 +62,40 @@ export async function wezTermListPanes(): Promise<WezTermPaneRow[]> {
   }
 }
 
+/** Win32 SetForegroundWindow — ดึง WezTerm window ขึ้นมาหน้าจอ (Windows เท่านั้น) */
+export async function focusWezTermWindow(): Promise<void> {
+  if (process.platform !== "win32") return;
+  const script = `
+$code = @'
+using System;
+using System.Runtime.InteropServices;
+public class WinFocus {
+  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+}
+'@
+Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
+$names = @('wezterm-gui','wezterm')
+foreach ($n in $names) {
+  $p = Get-Process -Name $n -ErrorAction SilentlyContinue |
+       Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero } |
+       Sort-Object -Property StartTime -Descending |
+       Select-Object -First 1
+  if ($p) {
+    [WinFocus]::ShowWindow($p.MainWindowHandle, 9)   # SW_RESTORE
+    [WinFocus]::SetForegroundWindow($p.MainWindowHandle)
+    break
+  }
+}`;
+  try {
+    await execFileAsync(
+      "powershell.exe",
+      ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script],
+      { timeout: 5000, windowsHide: true },
+    );
+  } catch { /* best effort — Windows focus-steal prevention may block */ }
+}
+
 export async function wezTermActivatePane(paneId: number): Promise<void> {
   const bin = resolveWezTermBin();
   const makeArgs = (preferMux: boolean) =>

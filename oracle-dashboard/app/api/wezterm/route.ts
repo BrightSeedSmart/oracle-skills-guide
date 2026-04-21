@@ -1,6 +1,7 @@
 import { consumePulseCommandDedup, releasePulseCommandDedup } from "@/lib/pulse-command-dedup";
 import { getPulseBridgeSecret, verifyPulseBridgeRequest } from "@/lib/pulse-bridge-secret";
 import {
+  focusWezTermWindow,
   isWezTermBridgeEnabled,
   resolveWezTermBin,
   wezTermActivatePane,
@@ -202,6 +203,7 @@ export async function POST(req: Request) {
         return Response.json({ error: "Invalid paneId." }, { status: 400 });
       }
       await wezTermActivatePane(paneId);
+      await focusWezTermWindow();
       return Response.json({ ok: true });
     }
 
