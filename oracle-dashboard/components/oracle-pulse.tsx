@@ -476,17 +476,15 @@ export function OraclePulse() {
         let argv: string[];
         if (isWin) {
           const cdPart = cwd ? `Set-Location '${cwd.replace(/'/g, "''")}'; ` : "";
-          const initCmd = `${cdPart}$Host.UI.RawUI.WindowTitle = '${agentTitle}'; Write-Host '' ; Write-Host '  Oracle Agent Mode' -ForegroundColor DarkGray; Write-Host ("  ${agent.emoji}  ${agent.name}  [${agent.displayId}]  " + '${agent.sessionNote}') -ForegroundColor Cyan; Write-Host ''`;
+          const initCmd = `${cdPart}$Host.UI.RawUI.WindowTitle = '${agentTitle}'; claude`;
           argv = ["powershell.exe", "-NoExit", "-NoLogo", "-Command", initCmd];
         } else {
           const cdPart = cwd ? `cd '${cwd.replace(/'/g, "'\\''")}' && ` : "";
-          const greet = `Oracle Agent: ${agent.name} ${agent.emoji}  [${agent.displayId}]  ${agent.sessionNote}`;
-          const initCmd = `${cdPart}printf '\\033[36m  ${greet}\\033[0m\\n' && exec ${shellBin} -l`;
-          argv = [shellBin, "-c", initCmd];
+          argv = [shellBin, "-c", `${cdPart}exec claude`];
         }
 
         body = { action: "start", argv };
-        appendLog(agent.name, `  start: ${shellBin} → agent mode (${agent.displayId})`);
+        appendLog(agent.name, `  start: claude → ${agent.name} (${agent.displayId})`);
       }
 
       appendLog(agent.name, `  cmd: ${String(body.action)} [${(body.argv as string[]).join(", ")}]`);
