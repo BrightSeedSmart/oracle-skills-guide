@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(bun ~/.claude/skills/recap/recap-rich.ts)"
+      "Bash(bun ~/.claude/skills/recap/recap-rich.ts)",
+      "Bash(ls \"F:\\\\\\\\Ai\\\\\\\\my-Oracle\\\\\\\\ψ\\\\\\\\inbox\\\\\\\\\")",
+      "Bash(read f *)",
+      "Bash(python3 -c 'import json,sys; lines=[json.loads\\(l\\) for l in open\\('\\\\''__TRACKED_VAR__'\\\\''\\) if l.strip\\(\\)]; ts=[l.get\\('\\\\''timestamp'\\\\'','\\\\'''\\\\''\\) for l in lines if l.get\\('\\\\''timestamp'\\\\''\\)]; print\\('\\\\''First:'\\\\'',ts[0][:16] if ts else '\\\\''N/A'\\\\'', '\\\\''| Last:'\\\\'',ts[-1][:16] if ts else '\\\\''N/A'\\\\'', '\\\\''| Msgs:'\\\\'',len\\(lines\\)\\)')",
+      "Bash(python3 /c/Users/User/.claude/skills/dig/scripts/dig.py 3)"
     ]
   }
 }
