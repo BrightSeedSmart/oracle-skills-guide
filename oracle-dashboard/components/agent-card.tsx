@@ -7,14 +7,14 @@ type AgentCardProps = {
   agent: OracleAgent;
   selected: boolean;
   badge?: number;
-  /** จาก remote state / automation (Oracle รุ่นอื่น) */
   remoteLabel?: string;
+  /** task ที่กำลังทำ: แสดงใต้ชื่อ agent บน card */
+  taskInfo?: { activeTitle: string; count: number };
   onSelect: () => void;
-  /** ดับเบิ้ลคลิก → spawn WezTerm window ของ agent นี้ */
   onDoubleClick?: () => void;
 };
 
-export function AgentCard({ agent, selected, badge, remoteLabel, onSelect, onDoubleClick }: AgentCardProps) {
+export function AgentCard({ agent, selected, badge, remoteLabel, taskInfo, onSelect, onDoubleClick }: AgentCardProps) {
   const lastClickRef = useRef(0);
 
   const handleClick = () => {
@@ -64,6 +64,18 @@ export function AgentCard({ agent, selected, badge, remoteLabel, onSelect, onDou
         {agent.name}
       </span>
       <span className="text-[11px] tabular-nums text-zinc-500">{agent.displayId}</span>
+      {taskInfo && (taskInfo.activeTitle !== "หลัก" || taskInfo.count > 1) ? (
+        <span className="mt-1 flex w-full items-center justify-center gap-1">
+          <span className="max-w-full truncate text-[9px] leading-tight text-violet-400/80" title={taskInfo.activeTitle}>
+            {taskInfo.activeTitle}
+          </span>
+          {taskInfo.count > 1 && (
+            <span className="shrink-0 rounded-full bg-violet-900/60 px-1 text-[8px] text-violet-300">
+              {taskInfo.count}
+            </span>
+          )}
+        </span>
+      ) : null}
       {remoteLabel ? (
         <span className="mt-1 line-clamp-2 w-full text-[9px] leading-tight text-cyan-500/90">{remoteLabel}</span>
       ) : null}
