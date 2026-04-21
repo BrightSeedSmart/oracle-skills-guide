@@ -7,7 +7,8 @@
       "Bash(python3 -c 'import json,sys; lines=[json.loads\\(l\\) for l in open\\('\\\\''__TRACKED_VAR__'\\\\''\\) if l.strip\\(\\)]; ts=[l.get\\('\\\\''timestamp'\\\\'','\\\\'''\\\\''\\) for l in lines if l.get\\('\\\\''timestamp'\\\\''\\)]; print\\('\\\\''First:'\\\\'',ts[0][:16] if ts else '\\\\''N/A'\\\\'', '\\\\''| Last:'\\\\'',ts[-1][:16] if ts else '\\\\''N/A'\\\\'', '\\\\''| Msgs:'\\\\'',len\\(lines\\)\\)')",
       "Bash(python3 /c/Users/User/.claude/skills/dig/scripts/dig.py 3)",
       "Bash(python3 *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(xargs ls *)"
     ]
   }
 }
