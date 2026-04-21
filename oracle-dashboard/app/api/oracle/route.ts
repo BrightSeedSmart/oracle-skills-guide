@@ -45,6 +45,7 @@ export async function POST(req: Request) {
   if (useCache) {
     const cached = await dbCheckCache(agent, message);
     if (cached) {
+      void dbLogTokens({ agent_key: agent, model: "cache-hit", input_tokens: 0, output_tokens: 0, cache_read_tokens: 0 });
       return Response.json({
         reply: cached,
         fromCache: true,

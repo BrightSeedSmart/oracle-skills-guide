@@ -147,16 +147,21 @@ export async function dbCheckCache(agentKey: string, question: string): Promise<
     const hash = hashQuestion(question);
     const now = new Date().toISOString();
     const { data } = await sb.from("oracle_cache")
-      .select("id, answer")
+      .select("id, answer, hit_count, input_tokens, tokens_saved")
       .eq("agent_key", agentKey).eq("q_hash", hash)
       .or(`expires_at.is.null,expires_at.gt.${now}`)
       .single();
     if (!data) return null;
-    // bump hit count async
-    void sb.from("oracle_cache")
-      .update({ hit_count: (data as any).hit_count + 1, last_hit_at: now })
-      .eq("id", (data as any).id);
-    return (data as any).answer as string;
+    const d = data as any;
+    sb.from("oracle_cache")
+      .update({
+        hit_count:    d.hit_count + 1,
+        tokens_saved: d.tokens_saved + (d.input_tokens ?? 0),
+        last_hit_at:  now,
+      })
+      .eq("id", d.id)
+      .then(() => undefined, () => undefined);
+    return d.answer as string;
   } catch { return null; }
 }
 

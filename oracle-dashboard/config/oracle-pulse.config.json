@@ -123,7 +123,8 @@
     "usdToThb": 32.61
   },
   "remoteState": {
-    "enabled": false,
-    "sshTarget": "root@72.60.77.195"
+    "enabled": true,
+    "sshTarget": "root@72.60.77.195",
+    "catPath": "/root/oracle-state.json"
   }
 }
