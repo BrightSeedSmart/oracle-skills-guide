@@ -487,7 +487,7 @@ export function OraclePulse() {
           const errMsg = String(data.error ?? "unknown");
           appendLog(agent.name, `✗ WezTerm error: ${errMsg}`);
           // Binary not found
-          if (/not found|no such file|cannot find|is not recognized/i.test(errMsg)) {
+          if (/not found|no such file|cannot find|is not recognized|ENOENT/i.test(errMsg)) {
             appendLog(agent.name, "  WezTerm ยังไม่ได้ติดตั้ง หรือ PATH ยังไม่ถูกต้อง:");
             if (isWin) {
               appendLog(agent.name, "  → winget install wez.wezterm");
