@@ -59,6 +59,7 @@ export function OraclePulse() {
   const quickActionLastAtRef = useRef<Record<string, number>>({});
   /** cache ผล probe-shell ไม่ต้อง probe ซ้ำทุกครั้ง */
   const shellCacheRef = useRef<string[] | null>(null);
+  const projectCwdRef = useRef<string | null>(null);
   // Avoid hydration mismatch: render "online" first, then sync real status after mount
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [autoOpsEnabled, setAutoOpsEnabled] = useState(true);
@@ -457,17 +458,35 @@ export function OraclePulse() {
         if (!shellCacheRef.current) {
           try {
             const pr = await fetch("/api/wezterm?probe-shell=1", { headers: pulseBridgeHeaders() });
-            const pd = await pr.json() as { spawnArgv?: string[]; shell?: string };
+            const pd = await pr.json() as { spawnArgv?: string[]; shell?: string; projectCwd?: string };
             if (Array.isArray(pd.spawnArgv) && pd.spawnArgv.length) {
               shellCacheRef.current = pd.spawnArgv;
+              if (typeof pd.projectCwd === "string" && pd.projectCwd.trim()) {
+                projectCwdRef.current = pd.projectCwd.trim();
+              }
               appendLog(agent.name, `  shell probe: ${pd.shell ?? pd.spawnArgv[0]}`);
             }
           } catch { /* fallback */ }
         }
         const fallback = isWin ? ["powershell.exe", "-NoLogo"] : isMac ? ["zsh", "-l"] : ["bash", "-l"];
-        const defaultShell = shellCacheRef.current ?? fallback;
-        body = { action: "start", argv: defaultShell };
-        appendLog(agent.name, `  start: ${defaultShell[0]}`);
+        const shellBin = (shellCacheRef.current ?? fallback)[0];
+        const cwd = projectCwdRef.current;
+        const agentTitle = `Oracle: ${agent.name} [${agent.displayId}]`;
+
+        let argv: string[];
+        if (isWin) {
+          const cdPart = cwd ? `Set-Location '${cwd.replace(/'/g, "''")}'; ` : "";
+          const initCmd = `${cdPart}$Host.UI.RawUI.WindowTitle = '${agentTitle}'; Write-Host '' ; Write-Host '  Oracle Agent Mode' -ForegroundColor DarkGray; Write-Host ("  ${agent.emoji}  ${agent.name}  [${agent.displayId}]  " + '${agent.sessionNote}') -ForegroundColor Cyan; Write-Host ''`;
+          argv = ["powershell.exe", "-NoExit", "-NoLogo", "-Command", initCmd];
+        } else {
+          const cdPart = cwd ? `cd '${cwd.replace(/'/g, "'\\''")}' && ` : "";
+          const greet = `Oracle Agent: ${agent.name} ${agent.emoji}  [${agent.displayId}]  ${agent.sessionNote}`;
+          const initCmd = `${cdPart}printf '\\033[36m  ${greet}\\033[0m\\n' && exec ${shellBin} -l`;
+          argv = [shellBin, "-c", initCmd];
+        }
+
+        body = { action: "start", argv };
+        appendLog(agent.name, `  start: ${shellBin} → agent mode (${agent.displayId})`);
       }
 
       appendLog(agent.name, `  cmd: ${String(body.action)} [${(body.argv as string[]).join(", ")}]`);

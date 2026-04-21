@@ -49,11 +49,15 @@ export async function GET(req: Request) {
       try {
         await execFileAsync(bin, args, { timeout: 3000, windowsHide: true });
         const spawnArgv = isWin ? [bin, "-NoLogo"] : [bin, "-l"];
-        return Response.json({ enabled: true, shell: bin, spawnArgv });
+        const { resolve } = await import("node:path");
+        const projectCwd = resolve(process.cwd(), "..");
+        return Response.json({ enabled: true, shell: bin, spawnArgv, projectCwd });
       } catch { /* try next */ }
     }
     const fallback = isWin ? "cmd.exe" : "sh";
-    return Response.json({ enabled: true, shell: fallback, spawnArgv: isWin ? ["cmd.exe", "/k"] : ["sh"] });
+    const { resolve } = await import("node:path");
+    const projectCwd = resolve(process.cwd(), "..");
+    return Response.json({ enabled: true, shell: fallback, spawnArgv: isWin ? ["cmd.exe", "/k"] : ["sh"], projectCwd });
   }
 
   try {
