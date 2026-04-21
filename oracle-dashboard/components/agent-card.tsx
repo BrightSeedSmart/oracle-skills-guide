@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { OracleAgent } from "@/lib/agents";
 
 type AgentCardProps = {
@@ -9,13 +10,29 @@ type AgentCardProps = {
   /** จาก remote state / automation (Oracle รุ่นอื่น) */
   remoteLabel?: string;
   onSelect: () => void;
+  /** ดับเบิ้ลคลิก → spawn WezTerm window ของ agent นี้ */
+  onDoubleClick?: () => void;
 };
 
-export function AgentCard({ agent, selected, badge, remoteLabel, onSelect }: AgentCardProps) {
+export function AgentCard({ agent, selected, badge, remoteLabel, onSelect, onDoubleClick }: AgentCardProps) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleClick = () => {
+    if (!onDoubleClick) { onSelect(); return; }
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+      onDoubleClick();
+      return;
+    }
+    timerRef.current = setTimeout(() => { timerRef.current = null; onSelect(); }, 220);
+  };
+
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={handleClick}
+      title="คลิก: เปิด panel  |  ดับเบิ้ลคลิก: เปิด WezTerm"
       className={`group relative flex aspect-square flex-col items-center justify-center rounded-xl border bg-zinc-900/80 p-3 text-center transition hover:bg-zinc-800/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 ${
         selected
           ? "border-violet-500 shadow-[0_0_0_1px_rgba(139,92,246,0.35)]"

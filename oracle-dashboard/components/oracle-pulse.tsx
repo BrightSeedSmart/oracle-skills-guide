@@ -13,6 +13,22 @@ import { idbDeleteAttachments, idbGetAttachments, idbPutAttachment } from "@/lib
 const TABS = ["Agents", "WezTerm", "Ops", "Tokens", "Voice", "API"] as const;
 const UI_STATE_KEY = "oracle-pulse-ui-state:v1";
 
+/** Minimal shell-style tokenizer for wezterm spawn argv (spaces + double-quotes). */
+function tokenizeShell(line: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === "\\" && q && line[i + 1] === '"') { cur += '"'; i++; continue; }
+    if (c === '"') { q = !q; continue; }
+    if (c === " " && !q) { if (cur) { out.push(cur); cur = ""; } continue; }
+    cur += c;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
 export function OraclePulse() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Agents");
   const [filter, setFilter] = useState<AgentCategory | "all">("all");
@@ -406,6 +422,54 @@ export function OraclePulse() {
     }
   }
 
+  const spawnWezTermForAgent = useCallback(
+    async (agent: OracleAgent) => {
+      const key = agent.name.toLowerCase();
+      // Ensure panel is open to show logs
+      setPanel(key, { open: true });
+      appendLog(agent.name, "WezTerm: กำลัง spawn…");
+
+      const actions: any[] = Array.isArray(agentActions[key]) ? agentActions[key] : [];
+      const spawnAction = actions.find((a: any) => a?.kind === "wezterm-spawn");
+
+      let body: Record<string, unknown>;
+      if (spawnAction) {
+        const v = spawnAction.variants;
+        const isWin = typeof navigator !== "undefined" && /win/i.test(navigator.platform);
+        const text: string = v
+          ? String(isWin ? (v.localWin ?? spawnAction.text ?? "") : (v.localUnix ?? spawnAction.text ?? ""))
+          : typeof spawnAction.text === "string" ? spawnAction.text : "";
+        if (!text.trim()) {
+          appendLog(agent.name, "WezTerm: ไม่มีคำสั่ง — เพิ่ม variants.localWin ใน config");
+          return;
+        }
+        body = { action: "spawn", argv: tokenizeShell(text), newWindow: true };
+      } else {
+        const isWin = typeof navigator !== "undefined" && /win/i.test(navigator.platform);
+        body = { action: "start", argv: isWin ? ["pwsh", "-NoLogo"] : ["bash", "-l"] };
+      }
+
+      appendLog(agent.name, `WezTerm: ${String(body.action)} → ${(body.argv as string[]).join(" ")}`);
+      appendWorkOpsLog("system", `WezTerm spawn: ${agent.name}`, { agentName: agent.name });
+      try {
+        const res = await fetch("/api/wezterm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...pulseBridgeHeaders() },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json() as { ok?: boolean; error?: string; paneIdOut?: unknown };
+        if (data.ok) {
+          appendLog(agent.name, `WezTerm: เปิดแล้ว${data.paneIdOut != null ? ` (pane ${data.paneIdOut})` : ""}`);
+        } else {
+          appendLog(agent.name, `WezTerm error: ${data.error ?? "unknown"}`);
+        }
+      } catch (e) {
+        appendLog(agent.name, `WezTerm error: ${e instanceof Error ? e.message : "failed"}`);
+      }
+    },
+    [agentActions, appendLog, appendWorkOpsLog, setPanel],
+  );
+
   const selectAgent = useCallback(
     (agent: OracleAgent) => {
       const key = agent.name.toLowerCase();
@@ -737,6 +801,7 @@ export function OraclePulse() {
                   badge={unreadById[agent.id]}
                   remoteLabel={agentRemoteNotes[agent.name.toLowerCase()]}
                   onSelect={() => selectAgent(agent)}
+                  onDoubleClick={() => void spawnWezTermForAgent(agent)}
                 />
               ))}
             </div>
