@@ -33,6 +33,28 @@ export async function GET(req: Request) {
     });
   }
 
+  // Probe which shell is available on the server OS
+  if (url.searchParams.get("probe-shell") === "1") {
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+    const isWin = process.platform === "win32";
+    const candidates = isWin
+      ? [["pwsh.exe", "-NoLogo", "-Command", "exit 0"], ["powershell.exe", "-NoLogo", "-Command", "exit 0"]]
+      : process.platform === "darwin"
+        ? [["zsh", "-lc", "exit 0"], ["bash", "-lc", "exit 0"]]
+        : [["bash", "-lc", "exit 0"], ["sh", "-c", "exit 0"]];
+    for (const [bin, ...args] of candidates) {
+      try {
+        await execFileAsync(bin, args, { timeout: 3000, windowsHide: true });
+        const spawnArgv = isWin ? [bin, "-NoLogo"] : [bin, "-l"];
+        return Response.json({ enabled: true, shell: bin, spawnArgv });
+      } catch { /* try next */ }
+    }
+    const fallback = isWin ? "cmd.exe" : "sh";
+    return Response.json({ enabled: true, shell: fallback, spawnArgv: isWin ? ["cmd.exe", "/k"] : ["sh"] });
+  }
+
   try {
     const panes = await wezTermListPanes();
     return Response.json({ enabled: true, panes });

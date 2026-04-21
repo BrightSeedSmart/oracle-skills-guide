@@ -57,6 +57,8 @@ export function OraclePulse() {
   const claudeSendLocksRef = useRef<Set<string>>(new Set());
   /** กันคลิก Quick Actions ซ้ำเร็วเกินไป */
   const quickActionLastAtRef = useRef<Record<string, number>>({});
+  /** cache ผล probe-shell ไม่ต้อง probe ซ้ำทุกครั้ง */
+  const shellCacheRef = useRef<string[] | null>(null);
   // Avoid hydration mismatch: render "online" first, then sync real status after mount
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [autoOpsEnabled, setAutoOpsEnabled] = useState(true);
@@ -451,11 +453,21 @@ export function OraclePulse() {
         }
         body = { action: "spawn", argv: tokenizeShell(text), newWindow: true };
       } else {
-        // No configured action — open default shell in new WezTerm window
-        // "spawn --new-window" ใช้ WezTerm mux — PTY ถูก allocate อย่างถูกต้อง ไม่ต้องใช้ -NoExit
-        const defaultShell = isWin ? ["pwsh", "-NoLogo"] : isMac ? ["zsh", "-l"] : ["bash", "-l"];
+        // Probe server-side for available shell (cached after first use)
+        if (!shellCacheRef.current) {
+          try {
+            const pr = await fetch("/api/wezterm?probe-shell=1", { headers: pulseBridgeHeaders() });
+            const pd = await pr.json() as { spawnArgv?: string[]; shell?: string };
+            if (Array.isArray(pd.spawnArgv) && pd.spawnArgv.length) {
+              shellCacheRef.current = pd.spawnArgv;
+              appendLog(agent.name, `  shell probe: ${pd.shell ?? pd.spawnArgv[0]}`);
+            }
+          } catch { /* fallback */ }
+        }
+        const fallback = isWin ? ["powershell.exe", "-NoLogo"] : isMac ? ["zsh", "-l"] : ["bash", "-l"];
+        const defaultShell = shellCacheRef.current ?? fallback;
         body = { action: "spawn", argv: defaultShell, newWindow: true };
-        appendLog(agent.name, `  (ไม่มี wezterm-spawn config → spawn new window: ${defaultShell[0]})`);
+        appendLog(agent.name, `  spawn: ${defaultShell[0]}`);
       }
 
       appendLog(agent.name, `  cmd: ${String(body.action)} [${(body.argv as string[]).join(", ")}]`);
