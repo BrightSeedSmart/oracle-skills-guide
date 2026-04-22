@@ -8,6 +8,7 @@ import { WorkOpsTab } from "@/components/work-ops-tab";
 import { WezTermPanel } from "@/components/wezterm-panel";
 import { TokenMonitor } from "@/components/token-monitor";
 import { BrainDashboard } from "@/components/brain-dashboard";
+import { VoiceChat } from "@/components/voice-chat";
 import { pulseBridgeHeaders } from "@/lib/pulse-bridge-client";
 import { appendWorkOpsLog, endWorkSession, getWorkOpsSnapshot, startOrTouchWorkSession, touchWorkSession } from "@/lib/work-ops-store";
 import { idbDeleteAttachments, idbGetAttachments, idbPutAttachment } from "@/lib/idb-attachments";
@@ -876,6 +877,8 @@ export function OraclePulse() {
             </ul>
           </aside>
         </div>
+      ) : tab === "Voice" ? (
+        <VoiceChat />
       ) : (
         <div className="flex flex-1 items-center justify-center p-8 text-sm text-zinc-500">
           {tab} — ยังไม่ได้เชื่อม (เวอร์ชันถัดไป)
